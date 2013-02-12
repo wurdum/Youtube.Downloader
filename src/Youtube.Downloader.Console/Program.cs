@@ -10,8 +10,10 @@ namespace Youtube.Downloader.Console
     class Program
     {
         private static readonly object SyncRoot = new object();
+        private static readonly object SyncRoot2 = new object();
 
         static void Main(string[] urls) {
+            urls = new[] { "http://www.youtube.com/watch?v=ZxbdVxNiF5Q", "http://www.youtube.com/watch?v=rICRmciHbbI" };
             WriteLine("Configuring");
             urls = ReadUrls(urls);
             var quality = ReadQuality();
@@ -23,7 +25,7 @@ namespace Youtube.Downloader.Console
                 var url = urls[index];
                 var top = index;
                 downloadingTasks.Add(new Task(() => {
-                    var video = Video.Factory.GetNew(url);
+                    var video = Video.Factory.Create(url).LoadVideo();
                     var format = video.GetMp4(quality);
 
                     var savePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), video.Title + format.VideoExtension);

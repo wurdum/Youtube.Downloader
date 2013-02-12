@@ -38,7 +38,9 @@ namespace Youtube.Downloader
             return string.Format("Type: {0}, Resolution: {1}p", VideoType, Resolution);
         }
 
-        public static class Factory  {
+        public class Factory  {
+            private readonly IEnumerable<string> _downloadUrls;
+
             private static IEnumerable<VideoFormat> _defaults = new List<VideoFormat> {
                 new VideoFormat(5, VideoType.Flash, 240),
                 new VideoFormat(6, VideoType.Flash, 270),
@@ -64,18 +66,26 @@ namespace Youtube.Downloader
                 new VideoFormat(102, VideoType.WebM, 720)
             };
 
-            public static ICollection<VideoFormat> GetNewFromUrl(IEnumerable<string> downloadUrls) {
-                return downloadUrls.Select(url => new { DownloadUrl = url, Itag = HttpUtility.ParseQueryString(new Uri(url).Query)["itag"] })
-                                   .Select(o => new { o.DownloadUrl, FormatCode = Byte.Parse(o.Itag) })
-                                   .Select(o => GetNew(o.FormatCode, o.DownloadUrl.ToString()))
-                                   .ToList();
+            private Factory(IEnumerable<string> downloadUrls) {
+                _downloadUrls = downloadUrls;
             }
 
-            public static VideoFormat GetNew(byte formatCode, string downloadUrl) {
+            public ICollection<VideoFormat> LoadFormats() {
+                return _downloadUrls.Select(url => new { DownloadUrl = url, Itag = HttpUtility.ParseQueryString(new Uri(url).Query)["itag"] })
+                                    .Select(o => new {o.DownloadUrl, FormatCode = Byte.Parse(o.Itag)})
+                                    .Select(o => CreateFormat(o.FormatCode, o.DownloadUrl.ToString()))
+                                    .ToList();
+            }
+
+            public VideoFormat CreateFormat(byte formatCode, string downloadUrl) {
                 var videoInfo = _defaults.SingleOrDefault(vi => vi.FormatCode == formatCode) ?? new VideoFormat(formatCode);
                 videoInfo.DownloadUrl = downloadUrl;
                 
                 return videoInfo;
+            }
+
+            public static Factory Create(IEnumerable<string> downloadUrls) {
+                return new Factory(downloadUrls);
             }
         }
     }

@@ -42,17 +42,23 @@ namespace Youtube.Downloader
             return string.Format("Title: {0}", Title);
         }
 
-        public static class Factory
+        public class Factory
         {
+            private readonly string _videoUrl;
+
+            private Factory(string videoUrl) {
+                _videoUrl = videoUrl;
+            }
+
             private const string VideoInfoGetUrlTemplate = "http://www.youtube.com/get_video_info?&video_id={0}&el=detailpage&ps=default&eurl=&gl=US&hl=en";
             private const string UnavailableContainerTemplate = "<div id=\"watch-player-unavailable\">";
             private const string VideoTitlePattern = @"\<meta name=""title"" content=""(?<title>.*)""\>";
 
-            public static Video GetNew(string videoUrl) {
-                if (videoUrl == null)
-                    throw new ArgumentNullException("videoUrl");
+            public Video LoadVideo() {
+                if (_videoUrl == null)
+                    throw new ArgumentNullException("_videoUrl");
 
-                var videoPageUrl = UrlHelpers.NormalizeYoutubeUrl(videoUrl);
+                var videoPageUrl = UrlHelpers.NormalizeYoutubeUrl(_videoUrl);
                 try {
                     var videoPageSource = UrlHelpers.GetPage(videoPageUrl);
                     if (IsUnavailable(videoPageSource))
@@ -68,15 +74,15 @@ namespace Youtube.Downloader
                 }
             }
 
-            private static bool IsUnavailable(string pageSource) {
+            private bool IsUnavailable(string pageSource) {
                 return pageSource.Contains(UnavailableContainerTemplate);
             }
 
-            private static string GetVideoId(string videoPageUrl) {
+            private string GetVideoId(string videoPageUrl) {
                 return HttpUtility.ParseQueryString(new Uri(videoPageUrl).Query)["v"];
             }
 
-            private static string GetVideoTitle(string pageSource) {
+            private string GetVideoTitle(string pageSource) {
                 try {
                     var invalidChars = Path.GetInvalidFileNameChars();
                     var videoTitleMatch = Regex.Match(pageSource, VideoTitlePattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -90,16 +96,20 @@ namespace Youtube.Downloader
                 }
             }
 
-            private static ICollection<VideoFormat> GetVideoFormats(string id) {
+            private ICollection<VideoFormat> GetVideoFormats(string id) {
                 var formatsUrl = String.Format(VideoInfoGetUrlTemplate, id);
                 var formatsPage = UrlHelpers.GetPage(formatsUrl);
 
                 var differentFormatVideoPages = UrlHelpers.GetFormatsUrls(formatsPage);
-                var videoFormats = VideoFormat.Factory.GetNewFromUrl(differentFormatVideoPages);
+                var videoFormats = VideoFormat.Factory.Create(differentFormatVideoPages).LoadFormats();
                 if (!videoFormats.Any())
                     throw new YoutubeParseException("No videos urls was found");
                 
                 return videoFormats;
+            }
+
+            public static Factory Create(string videoUrl) {
+                return new Factory(videoUrl);
             }
         }
     }

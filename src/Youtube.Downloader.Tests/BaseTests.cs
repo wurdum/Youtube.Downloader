@@ -101,7 +101,7 @@ namespace Youtube.Downloader.Tests
             if (Cache.TryGetValue(url, out video))
                 return video;
 
-            video = Video.Factory.GetNew(url);
+            video = Video.Factory.Create(url).LoadVideo();
             Cache.Add(url, video);
             return video;
         }
