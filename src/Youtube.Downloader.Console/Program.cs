@@ -10,10 +10,8 @@ namespace Youtube.Downloader.Console
     class Program
     {
         private static readonly object SyncRoot = new object();
-        private static readonly object SyncRoot2 = new object();
 
         static void Main(string[] urls) {
-            urls = new[] { "http://www.youtube.com/watch?v=ZxbdVxNiF5Q", "http://www.youtube.com/watch?v=rICRmciHbbI" };
             WriteLine("Configuring");
             urls = ReadUrls(urls);
             var quality = ReadQuality();
