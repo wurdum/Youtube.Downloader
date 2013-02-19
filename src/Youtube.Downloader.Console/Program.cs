@@ -23,9 +23,12 @@ namespace Youtube.Downloader.Console
                 var url = urls[index];
                 var top = index;
                 downloadingTasks.Add(new Task(() => {
-                    var video = Video.Factory.Create(url).LoadVideo();
-                    var format = video.GetMp4(quality);
-
+                    VideoFormat format;
+                    Video video;
+                    lock (SyncRoot) {
+                        video = Video.Factory.Create(url).LoadVideo();
+                        format = video.GetMp4(quality);
+                    }
                     var savePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), video.Title + format.VideoExtension);
                     var videoDownloader = new VideoDownloader(format, savePath);
                     videoDownloader.ProgressChanged += (o, a) => {
