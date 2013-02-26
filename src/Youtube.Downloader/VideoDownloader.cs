@@ -6,7 +6,7 @@ namespace Youtube.Downloader
 {
     public class VideoDownloader
     {
-        public VideoDownloader(VideoFormat video, string savePath) {
+        public VideoDownloader(Format video, string savePath) {
             if (video == null)
                 throw new ArgumentNullException("video");
 
@@ -18,7 +18,7 @@ namespace Youtube.Downloader
         }
 
         public string SavePath { get; private set; }
-        public VideoFormat Video { get; private set; }
+        public Format Video { get; private set; }
 
         public event EventHandler Started;
         public event EventHandler<ProgressEventArgs> ProgressChanged;

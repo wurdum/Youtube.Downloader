@@ -39,17 +39,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\FormatsLoadingException.cs" />
     <Compile Include="Exceptions\VideoNotAvailableException.cs" />
     <Compile Include="Exceptions\YoutubeParseException.cs" />
-    <Compile Include="UrlHelpers.cs" />
-    <Compile Include="Mono\Web\HttpUtility.cs" />
-    <Compile Include="Mono\Web\Util\Helpers.cs" />
-    <Compile Include="Mono\Web\Util\HttpEncoder.cs" />
+    <Compile Include="Helpers\HttpUtilities.cs" />
+    <Compile Include="Loaders\FormatsLoader.cs" />
+    <Compile Include="Loaders\HttpLoader.cs" />
+    <Compile Include="Loaders\VideoLoader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VideoDownloader.cs" />
     <Compile Include="Video.cs" />
-    <Compile Include="VideoFormat.cs" />
+    <Compile Include="Format.cs" />
+    <Compile Include="FormatsList.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

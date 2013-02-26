@@ -30,6 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Moq">
+      <HintPath>..\packages\Moq.4.0.10827\lib\NET40\Moq.dll</HintPath>
+    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
     </Reference>
@@ -42,9 +45,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseTests.cs" />
+    <Compile Include="FormatsLoaderTests.cs" />
+    <Compile Include="MultithreadedTests.cs" />
+    <Compile Include="VideoDownloaderTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UrlNormalizationTests.cs" />
+    <Compile Include="VideoLoaderTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Youtube.Downloader.Loaders;
 using Out = System.Console;
 
 namespace Youtube.Downloader.Console
@@ -12,22 +13,24 @@ namespace Youtube.Downloader.Console
         private static readonly object SyncRoot = new object();
 
         static void Main(string[] urls) {
-            WriteLine("Configuring");
+            WriteSeparator("Configuring");
             urls = ReadUrls(urls);
             var quality = ReadQuality();
 
-            WriteLine("Downloading");
+            WriteSeparator("Downloading");
             var zeroCursorPosition = Out.CursorTop;
             var downloadingTasks = new List<Task>();
             for (var index = 0; index < urls.Length; index++) {
                 var url = urls[index];
                 var top = index;
                 downloadingTasks.Add(new Task(() => {
-                    VideoFormat format;
+                    Format format;
                     Video video;
                     lock (SyncRoot) {
-                        video = Video.Factory.Create(url).LoadVideo();
-                        format = video.GetMp4(quality);
+                        var videoLoader = new VideoLoader();
+                        video = videoLoader.LoadVideo(url);
+                        video.LoadFormats(new FormatsLoader());
+                        format = video.FormatsList.GetMp4(quality);
                     }
                     var savePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), video.Title + format.VideoExtension);
                     var videoDownloader = new VideoDownloader(format, savePath);
@@ -53,7 +56,7 @@ namespace Youtube.Downloader.Console
             Out.WriteLine("\nDone!");
         }
 
-        private static void WriteLine(string msg) {
+        private static void WriteSeparator(string msg) {
             for (var i = 0; i < (Out.WindowWidth/2) - 10; i++)
                 Out.Write('-');
             Out.Write(msg);

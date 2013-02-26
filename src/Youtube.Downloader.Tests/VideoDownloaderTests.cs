@@ -5,10 +5,11 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Youtube.Downloader.Loaders;
 
 namespace Youtube.Downloader.Tests
 {
-    class BaseTests
+    class VideoDownloaderTests
     {
         private static Dictionary<string, Video> Cache = new Dictionary<string, Video>();
 
@@ -37,33 +38,11 @@ namespace Youtube.Downloader.Tests
         }
 
         [Test]
-        public void VideoFormatsTest() {
-            var url = "http://www.youtube.com/watch?v=KPWi3EKqNmU";
-            var video = LoadOrGetFromCache(url);
-
-            Assert.IsTrue(video.Formats.Count == 12);
-            Assert.IsTrue(video.Title.Equals("Пятничный подкаст [Много нового]"));
-        }
-        
-        [Test]
-        [TestCase(VideoQuality.Low, 360)]
-        [TestCase(VideoQuality.Medium, 720)]
-        [TestCase(VideoQuality.High, 1080)]
-        public void VideoQualityTest(VideoQuality quality, int resolution) {
-            var url = "http://www.youtube.com/watch?v=KPWi3EKqNmU";
-            var video = LoadOrGetFromCache(url);
-
-            var format = video.GetMp4(quality);
-
-            Assert.AreEqual(format.Resolution, resolution);
-        }
-
-        [Test]
         public void DownloadVideoTest() {
             var url = "http://www.youtube.com/watch?v=UiyDmqO59QE";
             var video = LoadOrGetFromCache(url);
 
-            var format = video.Formats.First(v => v.VideoType == VideoType.Mp4 && v.Resolution == 1080);
+            var format = video.FormatsList.First(v => v.VideoType == VideoType.Mp4 && v.Resolution == 1080);
             var savePath = Path.Combine(_tempDir, video.Title + format.VideoExtension);
 
             var videoDownloader = new VideoDownloader(format, savePath);
@@ -83,25 +62,14 @@ namespace Youtube.Downloader.Tests
             }
         }
 
-        [Test]
-        public void TaskExecutionTest() {
-            var url = "http://www.youtube.com/watch?v=UiyDmqO59QE";
-            var video = LoadOrGetFromCache(url);
-
-            var format = video.Formats.First(v => v.VideoType == VideoType.Mp4 && v.Resolution == 1080);
-            var savePath = Path.Combine(_tempDir, video.Title + format.VideoExtension);
-
-            var videoDownloader = new VideoDownloader(format, savePath);
-            videoDownloader.ProgressChanged += (o, a) => Console.WriteLine(a);
-            videoDownloader.Execute().Wait();
-        }
-
         public static Video LoadOrGetFromCache(string url) {
             Video video;
             if (Cache.TryGetValue(url, out video))
                 return video;
 
-            video = Video.Factory.Create(url).LoadVideo();
+            var videoLoader = new VideoLoader();
+            video = videoLoader.LoadVideo(url);
+            video.LoadFormats(new FormatsLoader());
             Cache.Add(url, video);
             return video;
         }
