@@ -64,8 +64,13 @@ namespace Youtube.Downloader
 
         #endregion
 
+        public Format Clone() {
+            var format = new Format(FormatCode, VideoType, Resolution) {DownloadUrl = DownloadUrl};
+            return format;
+        }
+
         public override string ToString() {
-            return string.Format("Type: {0}, Resolution: {1}p", VideoType, Resolution);
+            return string.Format("FormatCode: {0}, DownloadUrl: {1}, Resolution: {2}", FormatCode, DownloadUrl, Resolution);
         }
     }
 }

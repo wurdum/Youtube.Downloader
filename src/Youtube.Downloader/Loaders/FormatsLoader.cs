@@ -91,9 +91,12 @@ namespace Youtube.Downloader.Loaders
         private FormatsList CreateFormatsObjects(IEnumerable<string> downloadUrls) {
             try {
                 var formats = new FormatsList();
-                formats.AddRange(downloadUrls.Select(url => new { DownloadUrl = url, Itag = _httpHelper.ParseQueryString(new Uri(url).Query, Encoding.UTF8)["itag"] })
-                                             .Select(o => new { o.DownloadUrl, FormatCode = Byte.Parse(o.Itag) })
-                                             .Select(o => CreateFormat(o.FormatCode, o.DownloadUrl.ToString())));
+                
+                formats.AddRange(downloadUrls.Select(url => new {
+                    downloadUrl = url, 
+                    formatCode = Byte.Parse(_httpHelper.ParseQueryString(new Uri(url).Query, Encoding.UTF8)["itag"])
+                }).Select(o => CreateFormat(o.formatCode, o.downloadUrl)));
+
                 return formats;
             } catch (Exception ex) {
                 throw new FormatsLoadingException("Formats object creation error", ex);
@@ -101,10 +104,13 @@ namespace Youtube.Downloader.Loaders
         }
 
         private Format CreateFormat(byte formatCode, string downloadUrl) {
-            var videoInfo = Defaults.SingleOrDefault(vi => vi.FormatCode == formatCode) ?? new Format(formatCode);
-            videoInfo.DownloadUrl = downloadUrl;
+            var defaultFormat = Defaults.FirstOrDefault(d => d.FormatCode == formatCode);
+            if (defaultFormat == null)
+                return new Format(formatCode);
 
-            return videoInfo;
+            var format = defaultFormat.Clone();
+            format.DownloadUrl = downloadUrl;
+            return format;
         }
     }
 }
