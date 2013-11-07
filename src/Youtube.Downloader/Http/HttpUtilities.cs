@@ -39,7 +39,7 @@ using System.Collections.Specialized;
 using System.Globalization;
 using System.Text;
 
-namespace Youtube.Downloader.Helpers
+namespace Youtube.Downloader.Http
 {
     public class HttpUtilities
     {

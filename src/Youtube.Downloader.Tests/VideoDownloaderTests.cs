@@ -1,21 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using Youtube.Downloader.Loaders;
+using Youtube.Downloader.Http;
 
 namespace Youtube.Downloader.Tests
 {
     class VideoDownloaderTests
     {
-        private static Dictionary<string, Video> Cache = new Dictionary<string, Video>();
-
         private const string TempDirName = "tmp";
         private const string ResourceDirName = "Resources";
         private const string TemplateVideo = "Missing.mp4";
+        private const string VideoUrl = "http://www.youtube.com/watch?v=UiyDmqO59QE";
         private string _resourcesDir;
         private string _tempDir;
 
@@ -39,13 +36,13 @@ namespace Youtube.Downloader.Tests
 
         [Test]
         public void DownloadVideoTest() {
-            var url = "http://www.youtube.com/watch?v=UiyDmqO59QE";
-            var video = LoadOrGetFromCache(url);
-
-            var format = video.FormatsList.First(v => v.VideoType == VideoType.Mp4 && v.Resolution == 1080);
-            var savePath = Path.Combine(_tempDir, video.Title + format.VideoExtension);
-
-            var videoDownloader = new VideoDownloader(format, savePath);
+            var id = UrlsComposer.ParseId(VideoUrl);
+            
+            var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
+            var video = videoParser.GetInBestQuality();
+            
+            var savePath = Path.Combine(_tempDir, video.Title + "." + video.Format.Extention);
+            var videoDownloader = new VideoDownloader(video, savePath);
             Task.WaitAll(videoDownloader.Execute());
 
             var downloadedBytes = GetVideoBytes(Path.Combine(_resourcesDir, TemplateVideo));
@@ -60,18 +57,6 @@ namespace Youtube.Downloader.Tests
                 
                 return buffer;
             }
-        }
-
-        public static Video LoadOrGetFromCache(string url) {
-            Video video;
-            if (Cache.TryGetValue(url, out video))
-                return video;
-
-            var videoLoader = new VideoLoader();
-            video = videoLoader.LoadVideo(url);
-            video.LoadFormats(new FormatsLoader());
-            Cache.Add(url, video);
-            return video;
         }
     }
 }

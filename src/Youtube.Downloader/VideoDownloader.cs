@@ -1,16 +1,23 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using NLog;
 
 namespace Youtube.Downloader
 {
     public class VideoDownloader
     {
-        public VideoDownloader(Format video, string savePath) {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        public VideoDownloader(Video video) : this(video, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), GetFileName(video))) { }
+
+        public VideoDownloader(Video video, string savePath) {
             if (video == null)
                 throw new ArgumentNullException("video");
 
-            if (savePath == null)
+            if (string.IsNullOrWhiteSpace(savePath))
                 throw new ArgumentNullException("savePath");
 
             Video = video;
@@ -18,11 +25,10 @@ namespace Youtube.Downloader
         }
 
         public string SavePath { get; private set; }
-        public Format Video { get; private set; }
+        public Video Video { get; private set; }
 
-        public event EventHandler Started;
         public event EventHandler<ProgressEventArgs> ProgressChanged;
-        public event EventHandler Finished;
+        public event EventHandler<ProgressEventArgs> Finished;
 
         protected void Raise(EventHandler ev, EventArgs args) {
             if (ev != null)
@@ -37,24 +43,36 @@ namespace Youtube.Downloader
         public Task Execute() {
             var client = new WebClient();
 
-            client.DownloadProgressChanged += (s, a) => Raise(ProgressChanged, new ProgressEventArgs(a.ProgressPercentage));
-            client.DownloadFileCompleted += (s, a) => Raise(Finished, a);
+            client.DownloadProgressChanged += (s, a) => Raise(ProgressChanged, new ProgressEventArgs(Video, a.ProgressPercentage, a.BytesReceived));
+            client.DownloadFileCompleted += (s, a) => Raise(Finished, new ProgressEventArgs(Video, 100, 0));
             
-            Raise(Started, EventArgs.Empty);
-            return client.DownloadFileTaskAsync(Video.DownloadUrl, SavePath);
+            Logger.Debug("'{0}' downloading from '{1}' is started", Video.Id, Video.Format.DownloadUrl);
+            Finished += (sender, args) => Logger.Debug("'{0}' downloading is done", Video.Id);
+
+            return client.DownloadFileTaskAsync(Video.Format.DownloadUrl, SavePath);
+        }
+
+        private static string GetFileName(Video video) {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var clearedFileName = new string(video.Title.Where(c => !invalidChars.Contains(c)).ToArray());
+            return clearedFileName + "." + video.Format.Extention;
         }
     }
 
     public class ProgressEventArgs : EventArgs
     {
-        public ProgressEventArgs(double progressPercentage) {
+        public ProgressEventArgs(Video video, int progressPercentage, long bytesReceived) {
+            Video = video;
             ProgressPercentage = progressPercentage;
+            BytesReceived = bytesReceived;
         }
 
+        public Video Video { get; private set; }
         public double ProgressPercentage { get; private set; }
+        public long BytesReceived { get; private set; }
 
         public override string ToString() {
-            return string.Format("ProgressPercentage: {0}", ProgressPercentage);
+            return string.Format("Video: {0}, ProgressPercentage: {1}", Video, ProgressPercentage);
         }
     }
 }

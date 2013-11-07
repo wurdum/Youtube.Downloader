@@ -1,46 +1,104 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using Youtube.Downloader.Loaders;
+using NLog;
+using NLog.Config;
+using NLog.Targets;
+using Youtube.Downloader.Http;
 using Out = System.Console;
 
 namespace Youtube.Downloader.Console
 {
     class Program
     {
-        private static readonly object SyncRoot = new object();
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly ProgramOptionsSet OptionsSet = new ProgramOptionsSet();
+        private static SpinLock Sync = new SpinLock(true);
 
-        static void Main(string[] urls) {
-            WriteSeparator("Configuring");
-            urls = ReadUrls(urls);
-            var quality = ReadQuality();
+        static void Main(string[] args) {
+            OptionsSet.Add("f|formatsonly", "Just show info about available video formats", o => OptionsSet.FormatsOnly = !string.IsNullOrWhiteSpace(o));
+            OptionsSet.Add("v|verbose", "Show debug info", o => OptionsSet.Verbose = !string.IsNullOrWhiteSpace(o));
+            OptionsSet.Add("h|help", "Show help", o => OptionsSet.Help = !string.IsNullOrWhiteSpace(o));
+
+            string error;
+            if (!OptionsSet.Parse(args, out error)) {
+                OptionsSet.ShowHelp(error);
+                return;
+            }
+
+            if (OptionsSet.Help) {
+                OptionsSet.ShowHelp();
+                return;
+            }
+
+            ConfigureLogger(OptionsSet.Verbose);
+
+            if (OptionsSet.FormatsOnly) {
+                DownloadFormats(OptionsSet.Urls);
+                return;
+            }
+
+            DownloadVideos(OptionsSet.Urls);
+        }
+
+        private static void DownloadFormats(IList<string> urls) {
+            Logger.Debug("downloading formats from '{0}'", string.Join(", ", urls));
+
+            WriteSeparator("Formats");
+            var downloadingTasks = new List<Task>();
+            for (var index = 0; index < urls.Count; index++) {
+                var url = urls[index];
+                var id = UrlsComposer.ParseId(url);
+                downloadingTasks.Add(new Task(() => {
+                    var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
+                    var title = videoParser.GetTitle();
+                    var formats = videoParser.GetFormatsList();
+
+                    var isLocked = false;
+                    try {
+                        Sync.Enter(ref isLocked);
+
+                        WriteSeparator("[" + url + "]");
+                        WriteSeparator(title);
+
+                        Out.WriteLine("{0, 10}\t{1, 10}\t{2, 10}\t{3, 10}", "tag", "resolution", "extention", "is specific");
+                        Out.WriteLine();
+                        foreach (var format in formats)
+                            Out.WriteLine("{0, 10}\t{1, 10}\t{2, 10}\t{3, 10}", format.Tag, format.Resolution, format.Extention, format.IsSpecific);
+                    } finally {
+                        if (isLocked)
+                            Sync.Exit();
+                    }
+                }));
+            }
+
+            foreach (var task in downloadingTasks)
+                task.Start();
+
+            Task.WaitAll(downloadingTasks.ToArray());
+
+            Out.WriteLine("\nDone!");
+        }
+
+        private static void DownloadVideos(IList<string> urls) {
+            Logger.Debug("downloading from '{0}'", string.Join(", ", urls));
 
             WriteSeparator("Downloading");
             var zeroCursorPosition = Out.CursorTop;
             var downloadingTasks = new List<Task>();
-            for (var index = 0; index < urls.Length; index++) {
-                var url = urls[index];
+            var handlers = new Dictionary<string, ProgressChangedHandler>();
+            for (var index = 0; index < urls.Count; index++) {
                 var top = index;
+                var id = UrlsComposer.ParseId(urls[index]);
+                handlers.Add(id, new ProgressChangedHandler(id, index));
+
                 downloadingTasks.Add(new Task(() => {
-                    var videoLoader = new VideoLoader();
-                    var video = videoLoader.LoadVideo(url);
-                    video.LoadFormats(new FormatsLoader());
-                    var format = video.FormatsList.GetMp4(quality);
+                    var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
+                    var videoDownloader = new VideoDownloader(videoParser.GetInBestQuality());
 
-                    var savePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), video.Title + format.VideoExtension);
-                    var videoDownloader = new VideoDownloader(format, savePath);
-                    videoDownloader.ProgressChanged += (o, a) => {
-                        lock (SyncRoot) {
-                            Out.SetCursorPosition(0, zeroCursorPosition + top);
-                            Out.ForegroundColor = ConsoleColor.Green;
-                            Out.Write("{0}%\t", a.ProgressPercentage);
-                            Out.ForegroundColor = ConsoleColor.White;
-                            Out.Write(video.Title + '\n');
-                        }
-                    };
-
+                    videoDownloader.ProgressChanged += (o, a) => handlers[a.Video.Id].OnProgressChanged(o, a, zeroCursorPosition + top, ref Sync);
+                    videoDownloader.Finished += (o, a) => handlers[a.Video.Id].OnFinished(o, a, zeroCursorPosition + top, ref Sync);
                     videoDownloader.Execute().Wait();
                 }));
             }
@@ -54,44 +112,24 @@ namespace Youtube.Downloader.Console
         }
 
         private static void WriteSeparator(string msg) {
-            for (var i = 0; i < (Out.WindowWidth/2) - 10; i++)
-                Out.Write('-');
+            var dashLength = (int)Math.Floor((Out.WindowWidth - msg.Length)/2.0);
+            Out.Write(new string('-', dashLength));
             Out.Write(msg);
-            for (var i = 0; i < (Out.WindowWidth/2) - 10; i++)
-                Out.Write('-');
-            Out.Write('\n');
+            Out.WriteLine(new string('-', dashLength));
         }
 
-        private static VideoQuality ReadQuality() {
-            while (true) {
-                Out.WriteLine("Please choose video quality: ");
-                Out.WriteLine("1. Low");
-                Out.WriteLine("2. Medium");
-                Out.WriteLine("3. High");
-                Out.Write("Your choise: ");
-                int answer;
-                if (Int32.TryParse(Out.ReadLine(), out answer) && new[] {1, 2, 3}.Contains(answer))
-                    return (VideoQuality) answer;
-            }
-        }
+        private static void ConfigureLogger(bool verbose) {
+            const string layout = @"${date:format=HH\:MM\:ss} ${logger} ${message}";
+            var config = new LoggingConfiguration();
+            var console = new ColoredConsoleTarget { Layout = layout };
+            var file = new FileTarget { FileName = @"log.txt", Layout = layout };
+            
+            config.AddTarget("console", console);
+            config.AddTarget("file", file);
+            config.LoggingRules.Add(new LoggingRule("*", verbose ? LogLevel.Debug : LogLevel.Info, console));
+            config.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, file));
 
-        private static string[] ReadUrls(string[] urls) {
-            while (urls.Length == 0) {
-                Out.WriteLine("Please specify youtube videos to download:");
-                var videos = urls.ToList();
-                var counter = 0;
-                do {
-                    Out.Write("Video[{0}]: ", counter++);
-                    var url = Out.ReadLine();
-                    if (string.IsNullOrEmpty(url))
-                        break;
-                    videos.Add(url);
-                } while (true);
-
-                urls = videos.ToArray();
-            }
-
-            return urls;
+            LogManager.Configuration = config;
         }
     }
 }
