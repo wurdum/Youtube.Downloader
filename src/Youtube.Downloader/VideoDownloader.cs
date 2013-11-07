@@ -11,8 +11,6 @@ namespace Youtube.Downloader
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public VideoDownloader(Video video) : this(video, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), GetFileName(video))) { }
-
         public VideoDownloader(Video video, string savePath) {
             if (video == null)
                 throw new ArgumentNullException("video");
@@ -21,7 +19,7 @@ namespace Youtube.Downloader
                 throw new ArgumentNullException("savePath");
 
             Video = video;
-            SavePath = savePath;
+            SavePath = Path.Combine(savePath, GetFileName(video));
         }
 
         public string SavePath { get; private set; }
@@ -46,7 +44,7 @@ namespace Youtube.Downloader
             client.DownloadProgressChanged += (s, a) => Raise(ProgressChanged, new ProgressEventArgs(Video, a.ProgressPercentage, a.BytesReceived));
             client.DownloadFileCompleted += (s, a) => Raise(Finished, new ProgressEventArgs(Video, 100, 0));
             
-            Logger.Debug("'{0}' downloading from '{1}' is started", Video.Id, Video.Format.DownloadUrl);
+            Logger.Debug("'{0}' downloading from '{1}' to '{2}' is started", Video.Id, Video.Format.DownloadUrl, SavePath);
             Finished += (sender, args) => Logger.Debug("'{0}' downloading is done", Video.Id);
 
             return client.DownloadFileTaskAsync(Video.Format.DownloadUrl, SavePath);

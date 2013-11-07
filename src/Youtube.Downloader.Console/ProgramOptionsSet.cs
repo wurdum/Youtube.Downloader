@@ -13,17 +13,25 @@ namespace Youtube.Downloader.Console
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public List<string> Urls { get; set; }
+        public string PathToSave { get; set; }
         public bool FormatsOnly { get; set; }
-        public bool Verbose { get; set; }
         public bool Help { get; set; }
 
         public bool Parse(string[] args, out string error ) {
             var urls = Parse(args).SelectMany(u => u.Split(new[] {" "}, StringSplitOptions.RemoveEmptyEntries)).ToList();
+            if (string.IsNullOrWhiteSpace(PathToSave))
+                PathToSave = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
             var invalidUrls = urls.Where(url => !UrlRx.IsMatch(url)).ToArray();
 
             if (invalidUrls.Length > 0) {
                 error = string.Format("'{0}' {1} not valid url{2}", string.Join(", ", invalidUrls), 
                     invalidUrls.Length == 1 ? "is" : "are", invalidUrls.Length == 1 ? "" : "s");
+                return false;
+            }
+
+            if (!Directory.Exists(PathToSave)) {
+                error = string.Format("Directory '{0}' doesn't exists", PathToSave);
                 return false;
             }
 
@@ -48,8 +56,8 @@ namespace Youtube.Downloader.Console
             o.WriteLine(" - download two videos");
             o.Write("Youtube.Downloader.Console.exe -f http://www.youtube.com/watch?v=xxxxxxxxx");
             o.WriteLine(" - just show list of available video formats");
-            o.Write("Youtube.Downloader.Console.exe -v http://www.youtube.com/watch?v=xxxxxxxxx");
-            o.WriteLine(" - download video showing debug info");
+            o.Write("Youtube.Downloader.Console.exe -p D:\\ http://www.youtube.com/watch?v=xxxxxxxxx");
+            o.WriteLine(" - download video and save it to D:\\");
             o.Write("Youtube.Downloader.Console.exe -h");
             o.WriteLine(" - show help");
         }

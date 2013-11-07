@@ -18,7 +18,7 @@ namespace Youtube.Downloader.Console
 
         static void Main(string[] args) {
             OptionsSet.Add("f|formatsonly", "Just show info about available video formats", o => OptionsSet.FormatsOnly = !string.IsNullOrWhiteSpace(o));
-            OptionsSet.Add("v|verbose", "Show debug info", o => OptionsSet.Verbose = !string.IsNullOrWhiteSpace(o));
+            OptionsSet.Add("p|path=", "Path where to save videos. If not specified saves to Desktop.", o => OptionsSet.PathToSave = o);
             OptionsSet.Add("h|help", "Show help", o => OptionsSet.Help = !string.IsNullOrWhiteSpace(o));
 
             string error;
@@ -32,14 +32,14 @@ namespace Youtube.Downloader.Console
                 return;
             }
 
-            ConfigureLogger(OptionsSet.Verbose);
+            ConfigureLogger();
 
             if (OptionsSet.FormatsOnly) {
                 DownloadFormats(OptionsSet.Urls);
                 return;
             }
 
-            DownloadVideos(OptionsSet.Urls);
+            DownloadVideos(OptionsSet.Urls, OptionsSet.PathToSave);
         }
 
         private static void DownloadFormats(IList<string> urls) {
@@ -81,7 +81,7 @@ namespace Youtube.Downloader.Console
             Out.WriteLine("\nDone!");
         }
 
-        private static void DownloadVideos(IList<string> urls) {
+        private static void DownloadVideos(IList<string> urls, string pathToSave) {
             Logger.Debug("downloading from '{0}'", string.Join(", ", urls));
 
             WriteSeparator("Downloading");
@@ -95,7 +95,7 @@ namespace Youtube.Downloader.Console
 
                 downloadingTasks.Add(new Task(() => {
                     var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
-                    var videoDownloader = new VideoDownloader(videoParser.GetInBestQuality());
+                    var videoDownloader = new VideoDownloader(videoParser.GetInBestQuality(), pathToSave);
 
                     videoDownloader.ProgressChanged += (o, a) => handlers[a.Video.Id].OnProgressChanged(o, a, zeroCursorPosition + top, ref Sync);
                     videoDownloader.Finished += (o, a) => handlers[a.Video.Id].OnFinished(o, a, zeroCursorPosition + top, ref Sync);
@@ -118,7 +118,7 @@ namespace Youtube.Downloader.Console
             Out.WriteLine(new string('-', dashLength));
         }
 
-        private static void ConfigureLogger(bool verbose) {
+        private static void ConfigureLogger() {
             const string layout = @"${date:format=HH\:MM\:ss} ${logger} ${message}";
             var config = new LoggingConfiguration();
             var console = new ColoredConsoleTarget { Layout = layout };
@@ -126,7 +126,7 @@ namespace Youtube.Downloader.Console
             
             config.AddTarget("console", console);
             config.AddTarget("file", file);
-            config.LoggingRules.Add(new LoggingRule("*", verbose ? LogLevel.Debug : LogLevel.Info, console));
+            config.LoggingRules.Add(new LoggingRule("*", LogLevel.Info, console));
             config.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, file));
 
             LogManager.Configuration = config;
