@@ -17,8 +17,10 @@ namespace Youtube.Downloader.Console
         private static SpinLock Sync = new SpinLock(true);
 
         static void Main(string[] args) {
-            OptionsSet.Add("f|formatsonly", "Just show info about available video formats", o => OptionsSet.FormatsOnly = !string.IsNullOrWhiteSpace(o));
             OptionsSet.Add("p|path=", "Path where to save videos. If not specified saves to Desktop.", o => OptionsSet.PathToSave = o);
+            OptionsSet.Add("e|preferextention=", "Preferable video extention, like mp4 or webm", o => OptionsSet.PreferExtention = o);
+            OptionsSet.Add("f|formatsonly", "Just show info about available video formats", o => OptionsSet.FormatsOnly = !string.IsNullOrWhiteSpace(o));
+            OptionsSet.Add("m|mediumquality", "Download videos in medium quality", o => OptionsSet.MediumQuoality = !string.IsNullOrWhiteSpace(o));
             OptionsSet.Add("h|help", "Show help", o => OptionsSet.Help = !string.IsNullOrWhiteSpace(o));
 
             string error;
@@ -35,20 +37,20 @@ namespace Youtube.Downloader.Console
             ConfigureLogger();
 
             if (OptionsSet.FormatsOnly) {
-                DownloadFormats(OptionsSet.Urls);
+                DownloadFormats();
                 return;
             }
 
-            DownloadVideos(OptionsSet.Urls, OptionsSet.PathToSave);
+            DownloadVideos();
         }
 
-        private static void DownloadFormats(IList<string> urls) {
-            Logger.Debug("downloading formats from '{0}'", string.Join(", ", urls));
+        private static void DownloadFormats() {
+            Logger.Debug("downloading formats from '{0}'", string.Join(", ", OptionsSet.Urls));
 
             WriteSeparator("Formats");
             var downloadingTasks = new List<Task>();
-            for (var index = 0; index < urls.Count; index++) {
-                var url = urls[index];
+            for (var index = 0; index < OptionsSet.Urls.Count; index++) {
+                var url = OptionsSet.Urls[index];
                 var id = UrlsComposer.ParseId(url);
                 downloadingTasks.Add(new Task(() => {
                     var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
@@ -81,21 +83,24 @@ namespace Youtube.Downloader.Console
             Out.WriteLine("\nDone!");
         }
 
-        private static void DownloadVideos(IList<string> urls, string pathToSave) {
-            Logger.Debug("downloading from '{0}'", string.Join(", ", urls));
+        private static void DownloadVideos() {
+            Logger.Debug("downloading from '{0}'", string.Join(", ", OptionsSet.Urls));
 
             WriteSeparator("Downloading");
             var zeroCursorPosition = Out.CursorTop;
             var downloadingTasks = new List<Task>();
             var handlers = new Dictionary<string, ProgressChangedHandler>();
-            for (var index = 0; index < urls.Count; index++) {
+            for (var index = 0; index < OptionsSet.Urls.Count; index++) {
                 var top = index;
-                var id = UrlsComposer.ParseId(urls[index]);
+                var id = UrlsComposer.ParseId(OptionsSet.Urls[index]);
                 handlers.Add(id, new ProgressChangedHandler(id, index));
 
                 downloadingTasks.Add(new Task(() => {
                     var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
-                    var videoDownloader = new VideoDownloader(videoParser.GetInBestQuality(), pathToSave);
+                    var video = OptionsSet.MediumQuoality ? 
+                        videoParser.GetInMediiumQuality(OptionsSet.PreferExtention) :
+                        videoParser.GetInBestQuality(OptionsSet.PreferExtention);
+                    var videoDownloader = new VideoDownloader(video, OptionsSet.PathToSave);
 
                     videoDownloader.ProgressChanged += (o, a) => handlers[a.Video.Id].OnProgressChanged(o, a, zeroCursorPosition + top, ref Sync);
                     videoDownloader.Finished += (o, a) => handlers[a.Video.Id].OnFinished(o, a, zeroCursorPosition + top, ref Sync);

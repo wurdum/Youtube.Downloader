@@ -23,8 +23,63 @@ namespace Youtube.Downloader.Tests
         }
 
         [Test, TestCaseSource("FormatsGetBestTestCases")]
-        public Format GetBestFormatTest(Formats formats, bool takeSpecific) {
-            return formats.GetBest(takeSpecific);
+        public Format GetBestFormatTest(Formats formats, bool skipSpecific) {
+            return formats.GetBest(skipSpecific:skipSpecific);
+        }
+
+        [Test, TestCaseSource("FormatsGetBestWithPreferedExtTestCases")]
+        public Format GetBestFormatWithPreferedExtTest(Formats formats, string preferedExt, bool skipSpecific) {
+            return formats.GetBest(preferedExt, skipSpecific);
+        }
+
+        [Test, TestCaseSource("FormatsGetMediumTestCases")]
+        public Format GetMediumFormatTest(Formats formats, bool skipSpecific) {
+            return formats.GetMedium(skipSpecific: skipSpecific);
+        }
+
+        [Test, TestCaseSource("FormatsGetMediumWithPreferedExtTestCases")]
+        public Format GetBestMediumWithPreferedExtTest(Formats formats, string preferedExt, bool skipSpecific) {
+            return formats.GetMedium(preferedExt, skipSpecific);
+        }
+
+        private static IEnumerable<TestCaseData> FormatsGetMediumWithPreferedExtTestCases {
+            get {
+                yield return new TestCaseData(new Formats("x", new List<KeyValuePair<int, string>> {
+                    new KeyValuePair<int, string>(100, ""),
+                    new KeyValuePair<int, string>(22, ""),
+                    new KeyValuePair<int, string>(34, ""),
+                }), "mp4", false).Returns(new Format { Tag = 22, Resolution = new Resolution("720x1280"), IsSpecific = false, DownloadUrl = "" });
+                yield return new TestCaseData(new Formats("x", new List<KeyValuePair<int, string>> {
+                    new KeyValuePair<int, string>(22, ""),
+                    new KeyValuePair<int, string>(18, ""),
+                    new KeyValuePair<int, string>(5, ""),
+                    new KeyValuePair<int, string>(36, ""),
+                    new KeyValuePair<int, string>(17, ""),
+                }), "3gp", true).Returns(new Format { Tag = 36, Resolution = new Resolution("240x320"), IsSpecific = false, DownloadUrl = "" });
+            }
+        }
+
+        private static IEnumerable<TestCaseData> FormatsGetMediumTestCases {
+            get {
+                yield return new TestCaseData(new Formats("x", new List<KeyValuePair<int, string>> {
+                    new KeyValuePair<int, string>(82, ""),
+                    new KeyValuePair<int, string>(44, ""),
+                    new KeyValuePair<int, string>(46, ""),
+                    new KeyValuePair<int, string>(84, ""),
+                    new KeyValuePair<int, string>(45, ""),
+                    new KeyValuePair<int, string>(83, ""),
+                }), false).Returns(new Format { Tag = 84, Resolution = new Resolution("720p"), IsSpecific = true, DownloadUrl = "" });
+            }
+        }
+
+        private static IEnumerable<TestCaseData> FormatsGetBestWithPreferedExtTestCases {
+            get {
+                yield return new TestCaseData(new Formats("x", new List<KeyValuePair<int, string>> {
+                    new KeyValuePair<int, string>(46, ""),
+                    new KeyValuePair<int, string>(18, "xxx"),
+                    new KeyValuePair<int, string>(22, "yyy"),
+                }), "mp4", false).Returns(new Format { Tag = 22, Resolution = new Resolution("720x1280"), IsSpecific = false, DownloadUrl = "yyy" });
+            }
         }
 
         private static IEnumerable<TestCaseData> FormatsGetBestTestCases {
@@ -39,6 +94,15 @@ namespace Youtube.Downloader.Tests
                     new KeyValuePair<int, string>(135, "yyy"),
                     new KeyValuePair<int, string>(136, "xxx"),
                 }), false).Returns(new Format { Tag = 136, Extention = "mp4", Resolution = new Resolution("720p"), IsSpecific = true, DownloadUrl = "xxx" });
+                yield return new TestCaseData(new Formats("x", new List<KeyValuePair<int, string>> {
+                    new KeyValuePair<int, string>(83, ""),
+                    new KeyValuePair<int, string>(22, "xxx"),
+                    new KeyValuePair<int, string>(102, "yyy"),
+                }), false).Returns(new Format { Tag = 22, Extention = "mp4", Resolution = new Resolution("720x1280"), IsSpecific = false, DownloadUrl = "xxx" });
+                yield return new TestCaseData(new Formats("x", new List<KeyValuePair<int, string>> {
+                    new KeyValuePair<int, string>(93, "yyy"),
+                    new KeyValuePair<int, string>(18, "xxx"),
+                }), false).Returns(new Format { Tag = 18, Extention = "mp4", Resolution = new Resolution("360x640"), IsSpecific = false, DownloadUrl = "xxx" });
             }
         }
 

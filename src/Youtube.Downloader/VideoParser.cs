@@ -30,9 +30,14 @@ namespace Youtube.Downloader
             return new Video(_id, InfoPage.GetTitle(), formats.Get(tag));
         }
 
-        public Video GetInBestQuality() {
+        public Video GetInBestQuality(string preferExtention = null) {
             var formats = new Formats(_id, InfoPage.GetVideoUrls());
-            return new Video(_id, InfoPage.GetTitle(), formats.GetBest(true));
+            return new Video(_id, InfoPage.GetTitle(), formats.GetBest(preferExtention, true));
+        }
+
+        public Video GetInMediiumQuality(string preferExtention = null) {
+            var formats = new Formats(_id, InfoPage.GetVideoUrls());
+            return new Video(_id, InfoPage.GetTitle(), formats.GetMedium(preferExtention, true));
         }
 
         public string GetTitle() {

@@ -61,10 +61,39 @@ namespace Youtube.Downloader
             }
         }
 
-        public Format GetBest(bool skipSpecific = false) {
+        public Format GetMedium(string preferExtention = null, bool skipSpecific = false) {
+            var mediumFormat = default(Format);
+            lock (_sync) {
+                if (preferExtention != null) {
+                    var ordered = _formats
+                        .Where(f => !skipSpecific || !f.IsSpecific)
+                        .Where(f => f.Extention.Equals(preferExtention))
+                        .OrderByDescending(f => f.Resolution).ToArray();
+                    var middle = (int)Math.Floor((decimal)(ordered.Length - 1) / 2);
+                    mediumFormat = ordered[middle];
+                } 
+                
+                if (mediumFormat.Equals(default(Format))) {
+                    var ordered = _formats
+                        .Where(f => !skipSpecific || !f.IsSpecific)
+                        .OrderByDescending(f => f.Resolution).ToArray();
+                    var middle = (int)Math.Floor((decimal)(ordered.Length - 1)/ 2);
+                    mediumFormat = ordered[middle];
+                }
+            }
+
+            Logger.Debug("'{0}' '{1}' is chosen as medium format", _id, mediumFormat.Tag);
+
+            return mediumFormat;
+        }
+
+        public Format GetBest(string preferExtention = null, bool skipSpecific = false) {
             Format bestFormat;
             lock (_sync) {
-                bestFormat = _formats.Where(f => !skipSpecific || !f.IsSpecific).OrderByDescending(f => f.Resolution).First();
+                bestFormat = _formats.Where(f => !skipSpecific || !f.IsSpecific)
+                    .OrderByDescending(f => preferExtention != null && f.Extention.Equals(preferExtention) ? 1 : 0)
+                    .ThenByDescending(f => f.Resolution)
+                    .First();
             }
 
             Logger.Debug("'{0}' '{1}' is chosen as best format", _id, bestFormat.Tag);
@@ -119,6 +148,10 @@ namespace Youtube.Downloader
     {
         public const string UnknownResolution = "???";
         private readonly Regex _resRx = new Regex(@"\d+[pkx](\d+)?", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private readonly IEnumerable<Func<string, int>> _resolutionWeights = new List<Func<string, int>> {
+            s => s.Contains("x") ? 3 : 0, s => s.Contains("p") ? 2 : 0, s => s.Contains("k") ? 1 : 0
+        };
+
         private readonly string _resolution;
 
         public Resolution(string resolution) {
@@ -154,8 +187,17 @@ namespace Youtube.Downloader
         private int CompareInternal(Resolution other) {
             var self = ParseFirstNumber(_resolution);
             var oth = ParseFirstNumber(other.ToString());
+            if (self == oth)
+                return CompareByType(other);
 
             return self.CompareTo(oth);
+        }
+
+        private int CompareByType(Resolution other) {
+            var selfWeight = _resolutionWeights.Sum(rw => rw(_resolution));
+            var otherWeight = _resolutionWeights.Sum(rw => rw(other.ToString()));
+
+            return selfWeight.CompareTo(otherWeight);
         }
 
         private int ParseFirstNumber(string str) {

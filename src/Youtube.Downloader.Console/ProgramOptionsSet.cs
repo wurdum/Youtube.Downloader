@@ -14,7 +14,9 @@ namespace Youtube.Downloader.Console
 
         public List<string> Urls { get; set; }
         public string PathToSave { get; set; }
+        public string PreferExtention { get; set; }
         public bool FormatsOnly { get; set; }
+        public bool MediumQuoality { get; set; }
         public bool Help { get; set; }
 
         public bool Parse(string[] args, out string error ) {
@@ -54,6 +56,8 @@ namespace Youtube.Downloader.Console
             o.WriteLine("Examples:");
             o.Write("Youtube.Downloader.Console.exe http://www.youtube.com/watch?v=xxxxxxxxx http://www.youtube.com/watch?v=yyyyyyyyyy");
             o.WriteLine(" - download two videos");
+            o.Write("Youtube.Downloader.Console.exe -m -e mp4 http://www.youtube.com/watch?v=xxxxxxxxx");
+            o.WriteLine(" - download video in medium quality, prefer mp4");
             o.Write("Youtube.Downloader.Console.exe -f http://www.youtube.com/watch?v=xxxxxxxxx");
             o.WriteLine(" - just show list of available video formats");
             o.Write("Youtube.Downloader.Console.exe -p D:\\ http://www.youtube.com/watch?v=xxxxxxxxx");

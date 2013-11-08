@@ -41,12 +41,11 @@ namespace Youtube.Downloader.Tests
             var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
             var video = videoParser.GetInBestQuality();
             
-            var savePath = Path.Combine(_tempDir, video.Title + "." + video.Format.Extention);
-            var videoDownloader = new VideoDownloader(video, savePath);
+            var videoDownloader = new VideoDownloader(video, _tempDir);
             Task.WaitAll(videoDownloader.Execute());
 
             var downloadedBytes = GetVideoBytes(Path.Combine(_resourcesDir, TemplateVideo));
-            var templateBytes = GetVideoBytes(savePath);
+            var templateBytes = GetVideoBytes(videoDownloader.SavePath);
             Assert.AreEqual(downloadedBytes.Length, templateBytes.Length);
         }
 
