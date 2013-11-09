@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using Kent.Boogaart.KBCsv;
 using NLog;
@@ -12,13 +13,15 @@ namespace Youtube.Downloader
 {
     public class Formats : IEnumerable<Format>
     {
-        private readonly string _id;
+        public const string FormatsFileDir = "Data";
         public const string FormatsFileName = "formats.csv";
+        private readonly string _id;
         public static ReadOnlyDictionary<int, Format> AvailableFormats;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         static Formats() {
-            var filePath = Path.Combine("Data", FormatsFileName);
+            var programmRoot = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath);
+            var filePath = Path.Combine(programmRoot, FormatsFileDir, FormatsFileName);   
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("Formats file '" + filePath + "' not found");
 
