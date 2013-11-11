@@ -127,7 +127,7 @@ namespace Youtube.Downloader.Console
             const string layout = @"${date:format=HH\:MM\:ss} ${logger} ${message}";
             var config = new LoggingConfiguration();
             var console = new ColoredConsoleTarget { Layout = layout };
-            var file = new FileTarget { FileName = @"log.txt", Layout = layout };
+            var file = new FileTarget { FileName = @"${basedir}\log.txt", Layout = layout };
             
             config.AddTarget("console", console);
             config.AddTarget("file", file);
