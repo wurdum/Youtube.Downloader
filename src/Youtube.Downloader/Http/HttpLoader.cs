@@ -37,7 +37,8 @@ namespace Youtube.Downloader.Http
 
         public virtual async Task<string> GetPageAsync(string url, Encoding encoding) {
             Logger.Debug("requesting {0}page '{1}'", _coockieContainer == null ? "" : "with saving cookie ", url);
-            var request = CreateRequest(url);
+            var request = CreateStatefulRequest(url);
+            request.KeepAlive = false;
             var response = await request.GetResponseAsync();
             
             var responseStream = response.GetResponseStream();
@@ -54,17 +55,16 @@ namespace Youtube.Downloader.Http
             return page.ToString();
         }
 
-        protected virtual HttpWebRequest CreateRequest(string url) {
-            var webRequest = (HttpWebRequest)WebRequest.Create(url);
-            webRequest.CookieContainer = _coockieContainer;
-            webRequest.KeepAlive = false;
-            webRequest.UserAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0 (Chrome)";
-            webRequest.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-            webRequest.Headers[HttpRequestHeader.AcceptCharset] = "ISO-8859-1,utf-8;q=0.7,*;q=0.7";
-            webRequest.Headers[HttpRequestHeader.AcceptEncoding] = "gzip, deflate";
-            webRequest.Headers[HttpRequestHeader.AcceptLanguage] = "en-us,en;q=0.5";
-            webRequest.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            return webRequest;
+        public HttpWebRequest CreateStatefulRequest(string url) {
+            var request = (HttpWebRequest)WebRequest.Create(url);
+            request.CookieContainer = _coockieContainer;
+            request.UserAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0 (Chrome)";
+            request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+            request.Headers[HttpRequestHeader.AcceptCharset] = "ISO-8859-1,utf-8;q=0.7,*;q=0.7";
+            request.Headers[HttpRequestHeader.AcceptEncoding] = "gzip, deflate";
+            request.Headers[HttpRequestHeader.AcceptLanguage] = "en-us,en;q=0.5";
+            request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            return request;
         }
     }
 }

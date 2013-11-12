@@ -97,11 +97,12 @@ namespace Youtube.Downloader.Console
                 handlers.Add(id, new ProgressChangedHandler(id, index));
 
                 downloadingTasks.Add(new Task(() => {
-                    var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
+                    var httpLoader = new HttpLoader(true);
+                    var videoParser = new VideoParser(httpLoader, new HttpUtilities(), id);
                     var video = OptionsSet.MediumQuoality ? 
                         videoParser.GetInMediiumQuality(OptionsSet.PreferExtention) :
                         videoParser.GetInBestQuality(OptionsSet.PreferExtention);
-                    var videoDownloader = new VideoDownloader(video, OptionsSet.PathToSave);
+                    var videoDownloader = new VideoDownloader(httpLoader, video, OptionsSet.PathToSave);
 
                     videoDownloader.ProgressChanged += (o, a) => handlers[a.Video.Id].OnProgressChanged(o, a, zeroCursorPosition + top, ref Sync);
                     videoDownloader.Finished += (o, a) => handlers[a.Video.Id].OnFinished(o, a, zeroCursorPosition + top, ref Sync);

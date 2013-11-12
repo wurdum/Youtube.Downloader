@@ -42,7 +42,7 @@ namespace Youtube.Downloader.Tests
             var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
             var video = videoParser.GetInBestQuality();
             
-            var videoDownloader = new VideoDownloader(video, _tempDir);
+            var videoDownloader = new VideoDownloader(new HttpLoader(false), video, _tempDir);
             Task.WaitAll(videoDownloader.BeginDownload(false));
 
             var downloadedBytes = GetVideoBytes(Path.Combine(_resourcesDir, TemplateVideo));
@@ -57,7 +57,7 @@ namespace Youtube.Downloader.Tests
             var videoParser = new VideoParser(new HttpLoader(true), new HttpUtilities(), id);
             var video = videoParser.GetInBestQuality();
 
-            var videoDownloader = new VideoDownloader(video, _tempDir);
+            var videoDownloader = new VideoDownloader(new HttpLoader(false), video, _tempDir);
 
             File.Copy(Path.Combine(_resourcesDir, TemplatePartialVideo), videoDownloader.SavePath);
 

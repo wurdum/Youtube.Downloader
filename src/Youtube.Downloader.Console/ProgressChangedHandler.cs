@@ -58,7 +58,7 @@ namespace Youtube.Downloader.Console
 
         private static void WriteDownloadState(ProgressEventArgs a, int speed) {
             System.Console.ForegroundColor = ConsoleColor.Green;
-            System.Console.Write("{0, 5}%\t", a.ProgressPercentage);
+            System.Console.Write("{0, 5}%\t", Math.Round(a.ProgressPercentage, 0));
             System.Console.ForegroundColor = ConsoleColor.Blue;
             System.Console.Write("{0, 5}kbps\t", speed);
             System.Console.ForegroundColor = ConsoleColor.White;

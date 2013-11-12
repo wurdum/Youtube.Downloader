@@ -4,21 +4,27 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using NLog;
+using Youtube.Downloader.Http;
 
 namespace Youtube.Downloader
 {
     public class VideoDownloader
     {
+        private readonly HttpLoader _httpLoader;
         private const int BufferSize = 1024;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public VideoDownloader(Video video, string savePath) {
+        public VideoDownloader(HttpLoader httpLoader, Video video, string savePath) {
+            if (httpLoader == null)
+                throw new ArgumentNullException("httpLoader");
+            
             if (video == null)
                 throw new ArgumentNullException("video");
 
             if (string.IsNullOrWhiteSpace(savePath))
                 throw new ArgumentNullException("savePath");
 
+            _httpLoader = httpLoader;
             Video = video;
             SavePath = Path.Combine(savePath, GetFileName(video));
         }
@@ -40,13 +46,7 @@ namespace Youtube.Downloader
         }
 
         public async Task<long> BeginDownload(bool allowContinue = true) {
-            var httpRequest = WebRequest.CreateHttp(Video.Format.DownloadUrl);
-            httpRequest.UserAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0 (Chrome)";
-            httpRequest.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-            httpRequest.Headers[HttpRequestHeader.AcceptCharset] = "ISO-8859-1,utf-8;q=0.7,*;q=0.7";
-            httpRequest.Headers[HttpRequestHeader.AcceptEncoding] = "gzip, deflate";
-            httpRequest.Headers[HttpRequestHeader.AcceptLanguage] = "en-us,en;q=0.5";
-            httpRequest.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            var httpRequest = _httpLoader.CreateStatefulRequest(Video.Format.DownloadUrl);
 
             long alreadyInFile = 0;
             if (allowContinue && File.Exists(SavePath)) {
