@@ -17,6 +17,7 @@ namespace Youtube.Downloader.Console
         private static SpinLock Sync = new SpinLock(true);
 
         static void Main(string[] args) {
+            args = new[] { "http://www.youtube.com/watch?v=GoBNld-EbA4", "http://www.youtube.com/watch?v=4yqNjMBZUmY" };
             OptionsSet.Add("p|path=", "Path where to save videos. If not specified saves to Desktop.", o => OptionsSet.PathToSave = o);
             OptionsSet.Add("e|preferextention=", "Preferable video extention, like mp4 or webm", o => OptionsSet.PreferExtention = o);
             OptionsSet.Add("f|formatsonly", "Just show info about available video formats", o => OptionsSet.FormatsOnly = !string.IsNullOrWhiteSpace(o));
@@ -104,7 +105,7 @@ namespace Youtube.Downloader.Console
 
                     videoDownloader.ProgressChanged += (o, a) => handlers[a.Video.Id].OnProgressChanged(o, a, zeroCursorPosition + top, ref Sync);
                     videoDownloader.Finished += (o, a) => handlers[a.Video.Id].OnFinished(o, a, zeroCursorPosition + top, ref Sync);
-                    videoDownloader.Execute().Wait();
+                    videoDownloader.BeginDownload().Wait();
                 }));
             }
 

@@ -77,6 +77,9 @@
     <Content Include="Resources\InfoPage-RJ.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\Missing-partial.mp4">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Missing.mp4">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
