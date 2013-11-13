@@ -54,6 +54,9 @@ namespace Youtube.Downloader
                 httpRequest.AddRange(alreadyInFile);
             }
 
+            if (!allowContinue && File.Exists(SavePath))
+                File.Delete(SavePath);
+
             WebResponse httpResponse;
             try {
                 httpResponse = await httpRequest.GetResponseAsync();

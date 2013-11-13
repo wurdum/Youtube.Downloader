@@ -15,6 +15,7 @@ namespace Youtube.Downloader.Console
         public List<string> Urls { get; set; }
         public string PathToSave { get; set; }
         public string PreferExtention { get; set; }
+        public bool NewFiles { get; set; }
         public bool FormatsOnly { get; set; }
         public bool MediumQuoality { get; set; }
         public bool Help { get; set; }

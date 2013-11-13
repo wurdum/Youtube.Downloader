@@ -1,10 +1,12 @@
-Youtube.Downloader
-==================
+## Youtube.Downloader
 
-Simple console app that allows you download videos from www.youtube.com
+## Simple console app that allows you download videos from www.youtube.com
+Features:
+* can download several videos simulteniously
+* can continue downloading if previous session was terminated
+* allows you to receive info about available videos formats
 
-Usage:
-------
+## Usage:
 
 ```
 Examples:
@@ -20,6 +22,8 @@ Options:
   -e, --preferextention=VALUE
                              Preferable video extention, like mp4 or webm
   -f, --formatsonly          Just show info about available video formats
+  -n, --newfiles             Do not allow continue downloading. Just create
+                               new files.
   -m, --mediumquality        Download videos in medium quality
   -h, --help                 Show help
   [ ... ]                    List of videos urls from www.youtube.com separated by spaces
