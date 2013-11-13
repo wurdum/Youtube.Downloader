@@ -11,7 +11,7 @@ namespace Youtube.Downloader
     public class VideoDownloader
     {
         private readonly HttpLoader _httpLoader;
-        private const int BufferSize = 1024;
+        private const int BufferSize = 4096;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public VideoDownloader(HttpLoader httpLoader, Video video, string savePath) {

@@ -88,12 +88,12 @@ namespace Youtube.Downloader.Console
             }
 
             public int GetSpeedKbps() {
-                if (_counter % 100 != 0 && _speed > 0) {
+                if (_counter % 1000 != 0 && _speed > 0) {
                     var vagueSpeed = Speed();
                     return (int)(_speed * .5 + vagueSpeed * .5);
                 }
 
-                if (_counter % 200 != 0 && _speed > 0) {
+                if (_counter % 2000 != 0 && _speed > 0) {
                     var vagueSpeed = Speed();
                     return (int)(_speed * .2 + vagueSpeed * .8);
                 }
