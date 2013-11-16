@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Kent.Boogaart.KBCsv;
 using NLog;
+using Youtube.Downloader.Exceptions;
 
 namespace Youtube.Downloader
 {
@@ -44,13 +45,13 @@ namespace Youtube.Downloader
         }
 
         private static readonly object _sync = new object();
-        private readonly IEnumerable<Format> _formats;
+        private readonly Format[] _formats;
 
         public Formats(string id, IEnumerable<KeyValuePair<int, string>> videoUrls) {
             _id = id;
             _formats = ParseFormats(videoUrls);
             
-            Logger.Debug("'{0}' parsed {1} formats", _id, _formats.Count());
+            Logger.Debug("'{0}' parsed {1} formats", _id, _formats.Length);
         }
 
         public void Print(TextWriter outStream) {
@@ -65,6 +66,9 @@ namespace Youtube.Downloader
         }
 
         public Format GetMedium(string preferExtention = null, bool skipSpecific = false) {
+            if (_formats.Length == 0)
+                throw new FormatNotFoundException("No format for '" + _id + "' was found");
+
             var mediumFormat = default(Format);
             lock (_sync) {
                 if (preferExtention != null) {
@@ -91,6 +95,9 @@ namespace Youtube.Downloader
         }
 
         public Format GetBest(string preferExtention = null, bool skipSpecific = false) {
+            if (_formats.Length == 0)
+                throw new FormatNotFoundException("No format for '" + _id + "' was found");
+
             Format bestFormat;
             lock (_sync) {
                 bestFormat = _formats.Where(f => !skipSpecific || !f.IsSpecific)
@@ -107,7 +114,7 @@ namespace Youtube.Downloader
         #region IEnumerable implementation
 
         public IEnumerator<Format> GetEnumerator() {
-            return _formats.GetEnumerator();
+            return _formats.AsEnumerable().GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
@@ -116,7 +123,7 @@ namespace Youtube.Downloader
 
         #endregion
 
-        private IEnumerable<Format> ParseFormats(IEnumerable<KeyValuePair<int, string>> videoUrls) {
+        private Format[] ParseFormats(IEnumerable<KeyValuePair<int, string>> videoUrls) {
             lock (_sync) {
                 return videoUrls.Select(pair => {
                     var format = AvailableFormats.FirstOrDefault(f => f.Key == pair.Key).Value;

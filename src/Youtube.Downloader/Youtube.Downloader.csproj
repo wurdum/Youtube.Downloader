@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\FormatNotFoundException.cs" />
     <Compile Include="Exceptions\IdNotFoundException.cs" />
     <Compile Include="Formats.cs" />
     <Compile Include="Http\HttpLoader.cs" />

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using NUnit.Framework;
+using Youtube.Downloader.Exceptions;
 
 namespace Youtube.Downloader.Tests
 {
@@ -24,7 +25,7 @@ namespace Youtube.Downloader.Tests
 
         [Test, TestCaseSource("FormatsGetBestTestCases")]
         public Format GetBestFormatTest(Formats formats, bool skipSpecific) {
-            return formats.GetBest(skipSpecific:skipSpecific);
+            return formats.GetBest(skipSpecific: skipSpecific);
         }
 
         [Test, TestCaseSource("FormatsGetBestWithPreferedExtTestCases")]
@@ -40,6 +41,13 @@ namespace Youtube.Downloader.Tests
         [Test, TestCaseSource("FormatsGetMediumWithPreferedExtTestCases")]
         public Format GetBestMediumWithPreferedExtTest(Formats formats, string preferedExt, bool skipSpecific) {
             return formats.GetMedium(preferedExt, skipSpecific);
+        }
+
+        [Test]
+        public void IfNoFormatsFoundThrow() {
+            var formats = new Formats("x", new Dictionary<int, string>());
+            Assert.Throws<FormatNotFoundException>(() => formats.GetBest());
+            Assert.Throws<FormatNotFoundException>(() => formats.GetMedium());
         }
 
         private static IEnumerable<TestCaseData> FormatsGetMediumWithPreferedExtTestCases {

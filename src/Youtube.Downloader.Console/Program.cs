@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using Youtube.Downloader.Exceptions;
 using Youtube.Downloader.Http;
 using Out = System.Console;
 
@@ -99,9 +100,18 @@ namespace Youtube.Downloader.Console
                 downloadingTasks.Add(new Task(() => {
                     var httpLoader = new HttpLoader(true);
                     var videoParser = new VideoParser(httpLoader, new HttpUtilities(), id);
-                    var video = OptionsSet.MediumQuoality ? 
-                        videoParser.GetInMediiumQuality(OptionsSet.PreferExtention) :
-                        videoParser.GetInBestQuality(OptionsSet.PreferExtention);
+                    Video video;
+                    try {
+                        video = OptionsSet.MediumQuoality ?
+                                    videoParser.GetInMediiumQuality(OptionsSet.PreferExtention) :
+                                    videoParser.GetInBestQuality(OptionsSet.PreferExtention);
+                    } catch (FormatNotFoundException ex) {
+                        Logger.Debug("Downloading '{0}' is stopped, format not found", id);
+                        Out.SetCursorPosition(0, zeroCursorPosition + OptionsSet.Urls.Count);
+                        Out.WriteLine("'{0}' video has no available formats to download", id);
+                        return;
+                    }
+
                     var videoDownloader = new VideoDownloader(httpLoader, video, OptionsSet.PathToSave);
 
                     videoDownloader.ProgressChanged += (o, a) => handlers[a.Video.Id].OnProgressChanged(o, a, zeroCursorPosition + top, ref Sync);
@@ -115,6 +125,7 @@ namespace Youtube.Downloader.Console
 
             Task.WaitAll(downloadingTasks.ToArray());
 
+            Out.SetCursorPosition(0, zeroCursorPosition + OptionsSet.Urls.Count + 1);
             Out.WriteLine("\nDone!");
         }
 
